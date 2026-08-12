@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html dir="ltr" lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Attendance Scanner</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;direction:ltr;background:#F1F5F9;color:#111827;font-size:14px;padding:14px}
+.wrap{max-width:480px;margin:0 auto}
+.header{background:linear-gradient(135deg,#7C2D12,#9A3412);color:white;padding:14px 16px;border-radius:10px;margin-bottom:12px;text-align:center}
+.header h1{font-size:16px}
+.header .sub{font-size:11px;color:#FED7AA;margin-top:4px}
+.card{background:white;border-radius:10px;padding:14px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+label{display:block;font-size:11px;font-weight:700;color:#6B7280;margin-bottom:5px}
+select{width:100%;padding:9px;border-radius:6px;border:1px solid #D1D5DB;font-size:14px;margin-bottom:10px;font-family:inherit}
+#reader{width:100%;border-radius:8px;overflow:hidden}
+.startbtn{width:100%;padding:12px;background:#065F46;color:white;border:none;border-radius:8px;font-size:15px;font-weight:800;cursor:pointer}
+.startbtn:disabled{background:#9CA3AF}
+.log{max-height:280px;overflow-y:auto}
+.log-item{display:flex;justify-content:space-between;align-items:center;padding:9px 10px;border-bottom:1px solid #F3F4F6;font-size:13px}
+.log-item:last-child{border:none}
+.log-name{font-weight:700}
+.log-time{color:#6B7280;font-size:11px}
+.beep-flash{position:fixed;inset:0;background:#16A34A;opacity:0;pointer-events:none;transition:opacity .15s}
+.count{background:#065F46;color:white;border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700}
+.note{font-size:11px;color:#9CA3AF;text-align:center;margin-top:10px;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="beep-flash" id="flash"></div>
+<div class="wrap">
+  <div class="header">
+    <h1>Team Attendance Scanner</h1>
+    <div class="sub" id="statusSub">Not connected to sheet yet — keeping records local for now</div>
+  </div>
+
+  <div class="card" id="webhookCard">
+    <label>Sheet connection link (Web app URL) — set once only</label>
+    <input type="text" id="webhookUrl" placeholder="Paste the Web app URL here" style="width:100%;padding:9px;border-radius:6px;border:1px solid #D1D5DB;font-size:12px;margin-bottom:8px;font-family:inherit">
+    <button class="startbtn" onclick="saveWebhook()" style="background:#374151;padding:9px">Save Link</button>
+  </div>
+
+  <div class="card">
+    <label>Supervisor name (saved automatically on this phone)</label>
+    <input type="text" id="supName" placeholder="Type your name here" style="width:100%;padding:9px;border-radius:6px;border:1px solid #D1D5DB;font-size:14px;margin-bottom:10px;font-family:inherit">
+    <label>Team (led by)</label>
+    <select id="team">
+      <option>LORD</option>
+      <option>VINCENT</option>
+    </select>
+    <label>Event type</label>
+    <select id="event" onchange="renderEventUI()">
+      <option value="solo1">① Arrived (at housing) — supervisor check-in only</option>
+      <option value="team">② Departure (boarding vehicle) — scan whole team</option>
+      <option value="solo3">③ Arrived at site — supervisor check-in only</option>
+      <option value="team">④ Leaving site — scan whole team</option>
+      <option value="solo5">⑤ Arrived back (at housing) — supervisor check-in only</option>
+    </select>
+
+    <div id="soloUI" style="display:none">
+      <div id="photoFields"></div>
+      <button class="startbtn" onclick="soloCheckin()" style="background:#1D4ED8">Supervisor Check-in — One Tap</button>
+    </div>
+
+    <div id="teamUI">
+      <button class="startbtn" id="startBtn" onclick="startScan()">Start Scanning Team</button>
+      <div id="reader" style="margin-top:10px"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <strong style="font-size:13px">Today's Log</strong>
+      <span class="count" id="cnt">0</span>
+    </div>
+    <div class="log" id="log"></div>
+  </div>
+
+  <div class="note">Each person taps their card in front of the camera — one beep means recorded.</div>
+</div>
+
+<script>
+let scanner = null;
+let scannedIds = new Set();
+let count = 0;
+
+const supInput = document.getElementById('supName');
+supInput.value = localStorage.getItem('supName') || '';
+supInput.addEventListener('input', () => localStorage.setItem('supName', supInput.value));
+function supName() { return supInput.value.trim() || 'Supervisor'; }
+
+const DEFAULT_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbz7AFQob-JQdsMFzcYQDgXUT5BBsqhNPh9AexB9ZMhCm_ZT5ZEWJfF2Z1rulx-aOgYL2g/exec';
+const webhookInput = document.getElementById('webhookUrl');
+webhookInput.value = localStorage.getItem('webhookUrl') || DEFAULT_WEBHOOK_URL;
+if (!localStorage.getItem('webhookUrl')) {
+  localStorage.setItem('webhookUrl', DEFAULT_WEBHOOK_URL);
+}
+updateStatus();
+function saveWebhook() {
+  localStorage.setItem('webhookUrl', webhookInput.value.trim());
+  updateStatus();
+  alert('Saved. Every check-in will now be sent to the sheet automatically.');
+}
+function updateStatus() {
+  const url = localStorage.getItem('webhookUrl');
+  document.getElementById('statusSub').textContent = url
+    ? '✅ Connected to sheet — every check-in is sent automatically'
+    : 'Not connected to sheet yet — enter the Web app URL above';
+}
+
+function sendToSheet(row) {
+  const url = localStorage.getItem('webhookUrl');
+  if (!url) return; // Not connected yet, keep local record only
+  fetch(url, {
+    method: 'POST',
+    body: JSON.stringify(row),
+    headers: { 'Content-Type': 'text/plain' } // Apps Script needs text/plain to avoid CORS preflight
+  }).catch(() => {}); // No internet? Local record stays, will retry later
+}
+
+// List of active employees — loaded from the Employees tab every time the page opens
+// Anyone removed here (Status = Inactive) has their code disabled immediately
+let activeEmployees = {}; // { id: {name, status} }
+function loadEmployees() {
+  const url = localStorage.getItem('webhookUrl');
+  if (!url) return;
+  fetch(url + '?action=employees')
+    .then(r => r.json())
+    .then(data => {
+      activeEmployees = {};
+      (data.employees || []).forEach(emp => { activeEmployees[emp.id] = emp; });
+    })
+    .catch(() => {}); // No internet on open? Keep using the last loaded list
+}
+loadEmployees();
+
+const photoConfig = {
+  solo1: [{id:'odo1', label:'📷 Odometer photo'}, {id:'fuel1', label:'📷 Fuel gauge photo'}],
+  solo3: [{id:'site', label:'📷 Site / house photo'}],
+  solo5: [{id:'odo5', label:'📷 Odometer photo'}, {id:'fuel5', label:'📷 Fuel gauge photo'}],
+};
+
+function renderEventUI() {
+  const mode = document.getElementById('event').value;
+  const isTeam = mode === 'team';
+  document.getElementById('soloUI').style.display = isTeam ? 'none' : 'block';
+  document.getElementById('teamUI').style.display = isTeam ? 'block' : 'none';
+  if (scanner && isTeam === false) {
+    scanner.stop().catch(()=>{});
+    document.getElementById('startBtn').disabled = false;
+    document.getElementById('startBtn').textContent = 'Start Scanning Team';
+  }
+  if (!isTeam) {
+    const fields = photoConfig[mode] || [];
+    const box = document.getElementById('photoFields');
+    box.innerHTML = fields.map(f => `
+      <label>${f.label}</label>
+      <input type="file" accept="image/*" capture="environment" id="${f.id}" style="width:100%;margin-bottom:10px;font-size:12px">
+    `).join('');
+  }
+}
+renderEventUI();
+
+function soloCheckin() {
+  const mode = document.getElementById('event').value;
+  const fields = photoConfig[mode] || [];
+  for (const f of fields) {
+    const el = document.getElementById(f.id);
+    if (!el.files || !el.files.length) {
+      alert('You need to upload: ' + f.label);
+      return;
+    }
+  }
+  const now = new Date();
+  const time = now.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
+  const log = document.getElementById('log');
+  const item = document.createElement('div');
+  item.className = 'log-item';
+  const photoNote = fields.length ? ` (+${fields.length} photo)` : '';
+  item.innerHTML = `<span class="log-name">${supName()}${photoNote}</span><span class="log-time">${time}</span>`;
+  log.prepend(item);
+  count++;
+  document.getElementById('cnt').textContent = count;
+  const flash = document.getElementById('flash');
+  flash.style.opacity = '0.5';
+  setTimeout(() => flash.style.opacity = '0', 150);
+  if (navigator.vibrate) navigator.vibrate(80);
+
+  sendToSheet({
+    date: now.toLocaleDateString('en-GB'),
+    team: document.getElementById('team').value,
+    supervisor: supName(),
+    eventType: mode,
+    employeeName: supName() + ' (supervisor check-in)',
+    time: time,
+    late: '',
+    notes: fields.length ? `${fields.length} photo(s) attached` : ''
+  });
+}
+
+function startScan() {
+  document.getElementById('startBtn').disabled = true;
+  document.getElementById('startBtn').textContent = 'Scanning...';
+  scanner = new Html5Qrcode("reader");
+  scanner.start(
+    { facingMode: "environment" },
+    { fps: 10, qrbox: 220 },
+    onScanSuccess,
+    () => {}
+  );
+}
+
+function onScanSuccess(decodedText) {
+  const parts = decodedText.split('|');
+  if (parts[0] !== 'AAOS') return;
+  const pid = parts[1];
+  const key = pid + '_' + document.getElementById('event').value;
+  if (scannedIds.has(key)) return; // prevent duplicate scan for same event
+
+  // Check the employee is still active in the system — if their code was disabled, reject here
+  const emp = activeEmployees[pid];
+  if (Object.keys(activeEmployees).length && (!emp || emp.status === 'Inactive')) {
+    if (navigator.vibrate) navigator.vibrate([100,50,100]);
+    const log = document.getElementById('log');
+    const item = document.createElement('div');
+    item.className = 'log-item';
+    item.style.color = '#DC2626';
+    item.innerHTML = `<span class="log-name">⛔ Inactive code (${pid})</span><span class="log-time">Rejected</span>`;
+    log.prepend(item);
+    return;
+  }
+  const name = emp ? emp.name : parts[2];
+  scannedIds.add(key);
+
+  const now = new Date();
+  const time = now.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
+
+  const log = document.getElementById('log');
+  const item = document.createElement('div');
+  item.className = 'log-item';
+  item.innerHTML = `<span class="log-name">${name}</span><span class="log-time">${time}</span>`;
+  log.prepend(item);
+
+  count++;
+  document.getElementById('cnt').textContent = count;
+
+  const flash = document.getElementById('flash');
+  flash.style.opacity = '0.5';
+  setTimeout(() => flash.style.opacity = '0', 150);
+  if (navigator.vibrate) navigator.vibrate(80);
+
+  sendToSheet({
+    date: now.toLocaleDateString('en-GB'),
+    team: document.getElementById('team').value,
+    supervisor: supName(),
+    eventType: document.getElementById('event').value,
+    employeeName: name,
+    time: time,
+    late: '',
+    notes: ''
+  });
+}
+</script>
+</body>
+</html>
