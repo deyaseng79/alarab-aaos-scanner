@@ -7,29 +7,29 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;direction:rtl;background:linear-gradient(180deg,#EFF4FC 0%,#F8FAFC 220px);color:#111827;font-size:14px;padding:14px}
+body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;direction:rtl;background:#F5F6FA;color:#111827;font-size:14px;padding:14px}
 .wrap{max-width:480px;margin:0 auto}
-.header{background:linear-gradient(135deg,#1B2A63,#233A8C);color:white;padding:20px 16px;border-radius:14px;margin-bottom:14px;text-align:center;box-shadow:0 4px 14px rgba(27,42,99,.28)}
+.header{background:#1B2A63;color:white;padding:20px 16px;border-radius:14px;margin-bottom:14px;text-align:center;box-shadow:0 4px 14px rgba(27,42,99,.28)}
 .header img{width:56px;height:56px;object-fit:contain;border-radius:10px;background:white;padding:4px;margin-bottom:8px}
 .header h1{font-size:16px;font-weight:800}
-.header .sub{font-size:11px;color:#C7D2FE;margin-top:3px}
+.header .sub{font-size:11px;color:#B7C0DE;margin-top:3px}
 .card{background:white;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 1px 6px rgba(0,0,0,.06)}
 label{display:block;font-size:12px;font-weight:700;color:#374151;margin-bottom:6px}
 input[type=text],select{width:100%;padding:10px;border-radius:8px;border:1px solid #E5E7EB;font-size:14px;margin-bottom:12px;font-family:inherit;background:#F9FAFB}
 #reader{width:100%;border-radius:10px;overflow:hidden}
-.startbtn{width:100%;padding:13px;background:#065F46;color:white;border:none;border-radius:10px;font-size:15px;font-weight:800;cursor:pointer;transition:opacity .15s}
+.startbtn{width:100%;padding:13px;background:#1B2A63;color:white;border:none;border-radius:10px;font-size:15px;font-weight:800;cursor:pointer;transition:opacity .15s}
 .startbtn:disabled{background:#9CA3AF}
-.stopbtn{width:100%;padding:13px;background:#B91C1C;color:white;border:none;border-radius:10px;font-size:15px;font-weight:800;cursor:pointer;margin-top:8px;display:none}
+.stopbtn{width:100%;padding:13px;background:white;color:#1B2A63;border:2px solid #1B2A63;border-radius:10px;font-size:15px;font-weight:800;cursor:pointer;margin-top:8px;display:none}
 .log{max-height:280px;overflow-y:auto}
 .log-item{display:flex;justify-content:space-between;align-items:center;padding:10px 4px;border-bottom:1px solid #F3F4F6;font-size:13px}
 .log-item:last-child{border:none}
 .log-name{font-weight:700}
 .log-time{color:#9CA3AF;font-size:11px}
-.beep-flash{position:fixed;inset:0;background:#16A34A;opacity:0;pointer-events:none;transition:opacity .15s}
-.count{background:#065F46;color:white;border-radius:20px;padding:3px 12px;font-size:12px;font-weight:700}
-.gear{position:fixed;bottom:14px;left:14px;width:34px;height:34px;border-radius:50%;background:white;box-shadow:0 2px 8px rgba(0,0,0,.15);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;color:#9CA3AF;z-index:20}
+.beep-flash{position:fixed;inset:0;background:#1B2A63;opacity:0;pointer-events:none;transition:opacity .15s}
+.count{background:#1B2A63;color:white;border-radius:20px;padding:3px 12px;font-size:12px;font-weight:700}
+.gear{position:fixed;bottom:14px;left:14px;width:34px;height:34px;border-radius:50%;background:white;box-shadow:0 2px 8px rgba(0,0,0,.15);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;color:#1B2A63;z-index:20}
 .settingsCard{display:none}
-.footer{text-align:center;font-size:10px;color:#94A3C4;margin-top:16px}
+.footer{text-align:center;font-size:10px;color:#5B6A9C;margin-top:16px}
 </style>
 </head>
 <body>
@@ -44,7 +44,7 @@ input[type=text],select{width:100%;padding:10px;border-radius:8px;border:1px sol
   <div class="card settingsCard" id="webhookCard">
     <label>رابط الربط بالشيت</label>
     <input type="text" id="webhookUrl" placeholder="الصق الرابط هنا">
-    <button class="startbtn" onclick="saveWebhook()" style="background:#374151">حفظ</button>
+    <button class="startbtn" onclick="saveWebhook()" style="background:#1B2A63">حفظ</button>
   </div>
 
   <div class="card">
@@ -66,7 +66,7 @@ input[type=text],select{width:100%;padding:10px;border-radius:8px;border:1px sol
 
     <div id="soloUI" style="display:none">
       <div id="photoFields"></div>
-      <button class="startbtn" onclick="soloCheckin()" style="background:#1D4ED8">تسجيل — ضغطة واحدة</button>
+      <button class="startbtn" onclick="soloCheckin()" style="background:#1B2A63">تسجيل — ضغطة واحدة</button>
     </div>
 
     <div id="teamUI">
@@ -244,7 +244,7 @@ function onScanSuccess(decodedText) {
     const log = document.getElementById('log');
     const item = document.createElement('div');
     item.className = 'log-item';
-    item.style.color = '#DC2626';
+    item.style.color = '#121C42'; item.style.fontWeight = '800';
     item.innerHTML = `<span class="log-name">⛔ كود غير مفعّل (${pid})</span><span class="log-time">مرفوض</span>`;
     log.prepend(item);
     return;
