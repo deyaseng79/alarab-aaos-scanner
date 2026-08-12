@@ -157,6 +157,7 @@ function onScanSuccess(decodedText) {
     date: now.toLocaleDateString('en-GB'),
     team: 'Office',
     supervisor: '',
+    eventCode: mode,
     eventType: mode === 'in' ? 'حضور' : 'انصراف',
     employeeName: name,
     time: time,
