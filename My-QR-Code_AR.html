@@ -36,7 +36,7 @@ select{width:100%;padding:10px;border-radius:6px;border:1px solid #D1D5DB;font-s
   <div class="card" id="setupCard" style="display:none">
     <label>اختر اسمك من القائمة (أول مرة بس)</label>
     <select id="empSelect"><option value="">جاري التحميل...</option></select>
-    <button class="btn" onclick="confirmSelection()">تأكيد — دا أنا</button>
+    <button class="btn" onclick="confirmSelection()">تأكيد — هذا أنا</button>
   </div>
 
   <div class="card" id="qrCard" style="display:none">
@@ -48,9 +48,9 @@ select{width:100%;padding:10px;border-radius:6px;border:1px solid #D1D5DB;font-s
 
   <div class="card error" id="errorCard" style="display:none"></div>
 
-  <div class="change" id="changeLink" style="display:none" onclick="resetSelection()">مش أنا؟ / غيّر الاسم</div>
+  <div class="change" id="changeLink" style="display:none" onclick="resetSelection()">لست أنا؟ / تغيير الاسم</div>
 
-  <div class="note">احفظ الصورة دي في معرض الصور (اضغط مطولًا ← حفظ الصورة) عشان تفتحها بسرعة حتى من غير إنترنت. الكود ده مربوط بملفك في السيستم — لو اتغيّر حاجة في بياناتك، هيتحدث تلقائي.</div>
+  <div class="note">يُرجى حفظ هذه الصورة في معرض الصور (اضغط مطولًا ← حفظ الصورة) لفتحها بسرعة حتى بدون اتصال بالإنترنت. هذا الكود مرتبط بملفك في النظام — وفي حال تغيّر أي من بياناتك، سيتحدّث تلقائيًا.</div>
 </div>
 
 <script>
@@ -101,7 +101,7 @@ function showQR(id) {
 
   if (!emp || emp.status === 'Inactive') {
     document.getElementById('errorCard').style.display = 'block';
-    document.getElementById('errorCard').textContent = 'الكود ده مش شغال حاليًا. كلم المشرف أو الإدارة.';
+    document.getElementById('errorCard').textContent = 'هذا الكود غير مُفعّل حاليًا. يُرجى التواصل مع المشرف أو الإدارة.';
     return;
   }
 
