@@ -61,14 +61,14 @@ input[type=text],select{width:100%;padding:10px;border-radius:8px;border:1px sol
     <select id="event" onchange="renderEventUI()">
       <option value="solo1">① حضور — 📷 صورة العداد</option>
       <option value="team2">② التحرك (من سكن العمال)</option>
-      <option value="solo3">③ وصلت الموقع</option>
-      <option value="team4">④ اتحركت من الموقع</option>
+      <option value="solo3">③ الوصول إلى الموقع</option>
+      <option value="team4">④ مغادرة الموقع</option>
       <option value="solo5">⑤ الوصول (إلى سكن العمال) — 📷 صورة العداد</option>
     </select>
 
     <div id="soloUI" style="display:none">
       <div id="photoFields"></div>
-      <button class="startbtn" onclick="soloCheckin()" style="background:#1B2A63">تسجيل — ضغطة واحدة</button>
+      <button class="startbtn" onclick="soloCheckin()" style="background:#1B2A63">تسجيل بضغطة واحدة</button>
     </div>
 
     <div id="teamUI">
@@ -110,7 +110,7 @@ if (!localStorage.getItem('webhookUrl')) {
 }
 function saveWebhook() {
   localStorage.setItem('webhookUrl', webhookInput.value.trim());
-  alert('اتحفظ.');
+  alert('تم الحفظ.');
   toggleSettings();
 }
 function toggleSettings() {
@@ -145,17 +145,17 @@ loadEmployees();
 const eventLabels = {
   solo1: 'حضور',
   team2: 'التحرك (من سكن العمال)',
-  solo3: 'وصلت الموقع',
-  team4: 'اتحركت من الموقع',
+  solo3: 'الوصول إلى الموقع',
+  team4: 'مغادرة الموقع',
   solo5: 'الوصول (إلى سكن العمال)'
 };
 function eventLabel(code) { return eventLabels[code] || code; }
 
 // odometer:true = دي صورة عداد لازم يتقرأ منها رقم الكيلومترات أوتوماتيك (OCR) في الشيت
 const photoConfig = {
-  solo1: [{id:'gauge1', label:'📷 صورة العداد (الكيلومترات + البنزين مع بعض)', upload:true, odometer:true}],
+  solo1: [{id:'gauge1', label:'📷 صورة عداد المسافة ومؤشر الوقود معًا', upload:true, odometer:true}],
   solo3: [{id:'site', label:'📷 صورة البيت / الموقع'}],
-  solo5: [{id:'gauge5', label:'📷 صورة العداد (الكيلومترات + البنزين مع بعض)', upload:true, odometer:true}],
+  solo5: [{id:'gauge5', label:'📷 صورة عداد المسافة ومؤشر الوقود معًا', upload:true, odometer:true}],
 };
 
 // خانة الفريق متبقاش ظاهرة/مفعّلة غير لما المشرف يكتب اسمه
@@ -165,7 +165,7 @@ function toggleTeamField() {
   box.style.display = has ? 'block' : 'none';
 }
 
-// بتضغط الصورة وتحولها لنص base64 عشان تتبعت لجوجل درايف — بتقلل حجم الصورة الأول (أسرع في الرفع من الموبايل)
+// بتضغط الصورة وتحولها لنص base64 عشان تتبعت لجوجل درايف — بتقلل حجم الصورة الأول (أسرظ في الرفع من الموبايل)
 function compressImageToBase64(file, maxWidth, quality) {
   maxWidth = maxWidth || 1280;
   quality = quality || 0.7;
@@ -215,7 +215,7 @@ async function soloCheckin() {
   for (const f of fields) {
     const el = document.getElementById(f.id);
     if (!el.files || !el.files.length) {
-      alert('محتاج ترفع: ' + f.label);
+      alert('يُرجى رفع: ' + f.label);
       return;
     }
   }
@@ -224,13 +224,13 @@ async function soloCheckin() {
   let photoBase64 = '';
   const uploadField = fields.find(f => f.upload);
   if (uploadField) {
-    if (btn) { btn.disabled = true; btn.textContent = 'جاري رفع الصورة...'; }
+    if (btn) { btn.disabled = true; btn.textContent = 'جارٍ رفع الصورة...'; }
     try {
       const file = document.getElementById(uploadField.id).files[0];
       photoBase64 = await compressImageToBase64(file);
     } catch (err) {
-      if (btn) { btn.disabled = false; btn.textContent = 'تسجيل المشرف — ضغطة واحدة'; }
-      alert('حصلت مشكلة في قراءة الصورة، جرّب تاني');
+      if (btn) { btn.disabled = false; btn.textContent = 'تسجيل المشرف بضغطة واحدة'; }
+      alert('حدثت مشكلة أثناء قراءة الصورة، يُرجى المحاولة مرة أخرى');
       return;
     }
   }
@@ -264,7 +264,7 @@ async function soloCheckin() {
     odometer: !!(uploadField && uploadField.odometer)
   });
 
-  if (btn) { btn.disabled = false; btn.textContent = 'تسجيل المشرف — ضغطة واحدة'; }
+  if (btn) { btn.disabled = false; btn.textContent = 'تسجيل المشرف بضغطة واحدة'; }
 }
 
 function startScan() {
@@ -297,7 +297,7 @@ function onScanSuccess(decodedText) {
 
   const emp = activeEmployees[pid];
   if (Object.keys(activeEmployees).length && (!emp || emp.status === 'Inactive')) {
-  if (navigator.vibrate) navigator.vibrate([100,50,100]);
+    if (navigator.vibrate) navigator.vibrate([100,50,100]);
     const log = document.getElementById('log');
     const item = document.createElement('div');
     item.className = 'log-item';
