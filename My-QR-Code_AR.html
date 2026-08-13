@@ -70,7 +70,7 @@ fetch(WEBHOOK_URL + '?action=employees')
   })
   .catch(() => {
     document.getElementById('errorCard').style.display = 'block';
-    document.getElementById('errorCard').textContent = 'مفيش اتصال بالإنترنت دلوقتي. لازم تفتح الصفحة دي أول مرة وانت متصل.';
+    document.getElementById('errorCard').textContent = 'لا يوجد اتصال بالإنترنت حاليًا. يُرجى فتح هذه الصفحة أول مرة أثناء الاتصال بالإنترنت.';
   });
 
 function showSetup() {
